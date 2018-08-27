@@ -140,7 +140,41 @@ def a_star(grid, h, start, goal):
     return path[::-1], path_cost
 
 
-
 def heuristic(position, goal_position):
     return np.linalg.norm(np.array(position) - np.array(goal_position))
 
+
+def read_home(fname):
+    import re
+    line = open(fname).readline()
+    print("line:" + line)
+    coord = re.match(r'^lat0 (.*), lon0 (.*)$', line)
+    if coord:
+        lat = coord.group(1)
+        lon = coord.group(2)
+        print( "lat:"+ lat + " lon:" + lon)
+        return float(lat), float(lon)
+    return 0.0, 0.0
+
+
+def prune_path(path, threshold=1e-6):
+    def point(p):
+        return np.array([p[0], p[1], 1.0]).reshape(1,-1)
+
+    def collinear(p1, p2, p3):
+        det = np.linalg.det(np.concatenate((p1,p2,p3),0))
+        return abs(det) < threshold
+
+    pruned_path = [p for p in path]
+    i = 0
+    while i < len(pruned_path) -2:
+        p1 = point(pruned_path[i])
+        p2 = point(pruned_path[i+1])
+        p3 = point(pruned_path[1+2])
+
+        collinear(p1, p2, p3)
+        if collinear:
+            pruned_path.remove(pruned_path[i+1])
+        else:
+            i += 1
+        return pruned_path
